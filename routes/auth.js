@@ -2,6 +2,9 @@ const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 
+router.get("/", function (req, res) {
+  res.send("Hello, world!");
+});
 router.post("/login", (req, res) => {
   // Récupération des paramètres POST (username et password)
   const { username, password } = req.body;

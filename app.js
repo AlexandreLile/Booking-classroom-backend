@@ -1,4 +1,5 @@
 require("dotenv").config();
+const db = require("./db/db");
 
 const express = require("express");
 const cors = require("cors");
@@ -9,7 +10,7 @@ const hostname = process.env.HOST || "127.0.0.1";
 const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
-app.use("/api", routes);
+app.use("/", routes);
 
 app.listen(port, hostname, () => {
   console.log(`Serveur démarré sur http://${hostname}:${port}`);
