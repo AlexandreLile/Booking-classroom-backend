@@ -23,10 +23,13 @@ router.post("/login", (req, res) => {
 });
 
 router.post("/register", async (req, res) => {
-  const { firstname, lastname, email, password } = req.body;
+  const { firstname, lastname, email, password, role } = req.body;
 
   // Obtenir la date et l'heure actuelles
   const currentDate = new Date().toISOString().slice(0, 19).replace("T", " ");
+  // définition du role user par defaut
+  const userRole =
+    role && (role === "admin" || role === "user") ? role : "user";
 
   try {
     // Vérifier si l'utilisateur existe déjà
@@ -46,8 +49,16 @@ router.post("/register", async (req, res) => {
     const [result] = await db
       .promise()
       .query(
-        "INSERT INTO user(firstname, lastname, email, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-        [firstname, lastname, email, hashedPassword, currentDate, currentDate]
+        "INSERT INTO user(firstname, lastname, email, password, role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [
+          firstname,
+          lastname,
+          email,
+          hashedPassword,
+          userRole,
+          currentDate,
+          currentDate,
+        ]
       );
 
     // Générer un token JWT
