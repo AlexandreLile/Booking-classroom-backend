@@ -7,18 +7,52 @@ const bcrypt = require("bcryptjs");
 router.get("/", function (req, res) {
   res.send("Hello, world!");
 });
-router.post("/login", (req, res) => {
-  // Récupération des paramètres POST (username et password)
-  const { username, password } = req.body;
-  if (password === "toto") {
-    // Encodage du JWT via la variable d'environnement JWT_SECRET
-    const jwtToken = jwt.sign({ username }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
 
-    res.json(jwtToken);
-  } else {
-    res.status(401).json({ message: "Authentification échouée." });
+  try {
+    // vérifie si l'utilisateur existe
+    const [user] = await db
+      .promise()
+      .query(
+        "SELECT id, firstname, lastname, email, password, role FROM user WHERE email = ?",
+        [email]
+      );
+
+    // vérifie si l'utilisateur n'existe pas
+    if (user.length === 0) {
+      return res.status(400).json({ msg: "Utilisateur non trouvé" });
+    }
+
+    // Compare le mot de passe avec celui de la base de données
+    const isMatch = await bcrypt.compare(password, user[0].password);
+
+    if (!isMatch) {
+      return res.status(400).json({ msg: "Mot de passe incorrect" });
+    }
+
+    // Générer un token JWT
+    const token = jwt.sign(
+      { user: { id: user[0].id, role: user[0].role } },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // Répondre avec le token et les informations de l'utilisateur
+    res.json({
+      msg: "Connexion réussie !",
+      token,
+      user: {
+        id: user[0].id,
+        firstname: user[0].firstname,
+        lastname: user[0].lastname,
+        email: user[0].email,
+        role: user[0].role,
+      },
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Erreur serveur");
   }
 });
 
