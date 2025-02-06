@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const loginRoutes = require("./auth");
-const addRooms = require("./crud_rooms");
+const addRooms = require("./crud-rooms");
 const materials = require("./crud-materials");
-const bookings = require("./crud_bookings");
+const bookings = require("./crud-bookings");
 const roomMaterials = require("./crud-room-materials");
 const users = require("./crud-users");
 const { auth } = require("../middlewares/auth");
