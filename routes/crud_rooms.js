@@ -1,9 +1,40 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../db/db");
+const { isAdmin } = require("../middlewares/auth");
+
+// afficher les rooms
+router.get("/rooms", async (req, res) => {
+  try {
+    const [rooms] = await db.promise().query("SELECT * FROM rooms");
+    res.json(rooms);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Erreur serveur");
+  }
+});
+
+// afficher une room
+router.get("/room/:id", async (req, res) => {
+  const roomId = req.params.id;
+  try {
+    const [room] = await db
+      .promise()
+      .query("SELECT * FROM rooms WHERE id =?", [roomId]);
+
+    if (room.length === 0) {
+      return res.status(404).json({ message: "Salle non trouvée" });
+    }
+
+    res.json(room[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Erreur serveur");
+  }
+});
 
 // Ajouter une room
-router.post("/add-room", async (req, res) => {
+router.post("/admin/add-room", isAdmin, async (req, res) => {
   const { name, capacity } = req.body;
   const currentDate = new Date().toISOString().slice(0, 19).replace("T", " ");
   try {
@@ -23,4 +54,75 @@ router.post("/add-room", async (req, res) => {
   }
 });
 
+// Modifier une room
+
+router.patch("/admin/update-room/:id", isAdmin, async (req, res) => {
+  const { name, capacity } = req.body;
+  const roomId = req.params.id;
+  const updatedAt = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+  try {
+    const [existingRoom] = await db
+      .promise()
+      .query("SELECT * FROM rooms WHERE id = ?", [roomId]);
+
+    if (existingRoom.length === 0) {
+      return res.status(404).json({ message: "Salle non trouvée" });
+    }
+
+    const fields = [];
+    const values = [];
+
+    if (name) {
+      fields.push("name = ?");
+      values.push(name);
+    }
+    if (capacity) {
+      fields.push("capacity = ?");
+      values.push(capacity);
+    }
+
+    fields.push("updated_at = ?");
+    values.push(updatedAt);
+
+    values.push(roomId);
+
+    if (fields.length === 1) {
+      return res.status(400).json({ message: "Aucune donnée à mettre à jour" });
+    }
+
+    const query = `UPDATE rooms SET ${fields.join(", ")} WHERE id = ?`;
+    await db.promise().query(query, values);
+
+    res.json({ message: "Salle mise à jour avec succès" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Erreur serveur");
+  }
+});
+
+// Supprimer une room
+router.delete("/admin/delete-room/:id", isAdmin, async (req, res) => {
+  const roomId = req.params.id;
+  try {
+    // Vérifier si la salle existe
+    const [existingRoom] = await db
+      .promise()
+      .query("SELECT * FROM rooms WHERE id =?", [roomId]);
+
+    if (existingRoom.length === 0) {
+      return res.status(404).json({ message: "Salle non trouvée" });
+    }
+
+    // Supprimer la salle
+    const [result] = await db
+      .promise()
+      .query("DELETE FROM rooms WHERE id =?", [roomId]);
+
+    res.json({ message: "Salle supprimée avec succès" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Erreur serveur");
+  }
+});
 module.exports = router;
