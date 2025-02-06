@@ -4,7 +4,8 @@ const db = require("../db/db");
 
 // Ajouter un material
 router.post("/add-material", async (req, res) => {
-  const name  = req.body;
+  const { name }  = req.body;
+  console.log(name);
   const currentDate = new Date().toISOString().slice(0, 19).replace("T", " ");
   try {
     const [result] = await db
@@ -20,6 +21,69 @@ router.post("/add-material", async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Erreur serveur");
+  }
+});
+
+router.get('/show-materials', async (req, res) => {
+  try {
+    const [results] = await db.promise().query('SELECT * FROM materiels');
+    res.json(results);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Erreur serveur");
+  }
+});
+
+router.patch('/update-material/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  const currentDate = new Date().toISOString().slice(0, 19).replace("T", " ");
+  try {
+    const [result] = await db.promise().query(
+      'UPDATE materiels SET name =?, updated_at =? WHERE id =?',
+      [name, currentDate, id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).send('Matériel non trouvé');
+    }
+    res.json({ message: 'Matériel mis à jour avec succès' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Erreur serveur');
+  }
+});
+
+router.delete('/delete-material/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await db.promise().query(
+      'DELETE FROM materiels WHERE id =?',
+      [id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).send('Matériel non trouvé');
+    }
+    res.json({ message: 'Matériel supprimé avec succès' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Erreur serveur');
+  }
+});
+
+router.get('/material/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await db.promise().query(
+      'SELECT * FROM materiels WHERE id =?',
+      [id]
+    );
+    if (!result.length) {
+      return res.status(404).send('Matériel non trouvé');
+    }
+    res.json(result[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Erreur serveur');
   }
 });
 
